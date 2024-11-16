@@ -181,6 +181,19 @@ app.get('/collections/:id', async (req, res) => {
         res.redirect('/')
     }
 });
+app.get('/collections-delete/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await prisma.collections_tb.delete({
+            where: { id: parseInt(id) }
+        });
+        req.flash('success', 'Delete collection succes')
+        res.redirect('/');
+    } catch (error) {
+        console.log(error);
+        res.redirect(`/collections/${id}`)
+    }
+})
 
 app.post('/task/:id', async (req, res) => {
     const { id } = req.params;
@@ -209,12 +222,11 @@ app.post('/task/:id', async (req, res) => {
 });
 app.post('/task-done', async (req, res) => {
     const { collection_id, task_id, is_done }= req.body;
-    console.log(is_done)
     try {
         await prisma.task_tb.update({
             where: { id: parseInt(task_id) },
             data: {
-                is_done: true
+                is_done: is_done == "true" ? true : false
             }
         })
         res.redirect(`/collections/${collection_id}`);
@@ -222,7 +234,20 @@ app.post('/task-done', async (req, res) => {
         console.log(error);
         res.redirect(`/collections/${collection_id}`);
     }
-})
+});
+app.post('/task-delete', async (req, res) => {
+    const { id, collection_id } = req.body;
+    try {
+        await prisma.task_tb.delete({
+            where: { id: parseInt(id) }
+        });
+        req.flash('success', 'Delete task success')
+        res.redirect(`/collections/${collection_id}`)
+    } catch (error) {
+        console.log(error);
+        res.redirect(`/collections/${collection_id}`)
+    }
+});
 
 
 
