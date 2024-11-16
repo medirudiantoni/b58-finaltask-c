@@ -50,9 +50,13 @@ app.get('/', async (req, res) => {
             include: {
                 task_tb: true,
                 _count: true
+            },
+            orderBy: {
+                id: 'asc'
             }
-        })
-        res.render("collections", { data: result })
+        });
+        // res.json({ result })
+        res.render("collections", { data: result });
     } catch (error) {
         res.render("index");
     }
@@ -129,6 +133,96 @@ app.get('/users', async (req, res) => {
     }
 });
 
+app.post('/collections', async (req, res) => {
+    const { name, user_id } = req.body;
+    try {
+        await prisma.collections_tb.create({
+            data: { name: name ? name : 'Unnamed', user_id: parseInt(user_id) }
+        });
+        req.flash('success', 'Create new collection success');
+        res.redirect('/');
+    } catch (error) {
+        console.log(error)
+        redirect('/');
+    }
+});
+app.post('/collections/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name } = req.body;
+    try {
+        await prisma.collections_tb.update({
+            where: { id: parseInt(id) },
+            data: {
+                name,
+            }
+        });
+        console.log('update collections success')
+        req.flash('success', 'update collections success');
+        res.redirect(`/collections/${id}`);
+    } catch (error) {
+        console.log(error);
+        res.redirect('/')
+    }
+});
+app.get('/collections/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await prisma.collections_tb.findUnique({
+            where: { id: parseInt(id) }
+        });
+        const resultTask = await prisma.task_tb.findMany({
+            where: { collections_id: parseInt(id) }
+        });
+        const resultTaskTrue = resultTask.filter(item => item.is_done === true);
+        const resultTaskFalse = resultTask.filter(item => item.is_done === false);
+        res.render('task', { collection_id: id, id, collection: result, tasksTrue: resultTaskTrue, tasksFalse: resultTaskFalse, falseLength: resultTaskFalse.length, trueLength: resultTaskTrue.length })
+    } catch (error) {
+        console.log(error)
+        res.redirect('/')
+    }
+});
+
+app.post('/task/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name, collection_id } = req.body;
+    console.log(collection_id)
+    try {
+        const isName = await prisma.task_tb.findUnique({
+            where: { name }
+        });
+        if(isName){
+            console.log('name already used')
+            return res.redirect(`/collections/${id}`)
+        };
+        await prisma.task_tb.create({
+            data: {
+                name,
+                is_done: false,
+                collections_id: parseInt(collection_id)
+            }
+        });
+        res.redirect(`/collections/${id}`);
+    } catch (error) {
+        console.log(error);
+        res.redirect(`/collections/id`);
+    }
+});
+app.post('/task-done', async (req, res) => {
+    const { collection_id, task_id, is_done }= req.body;
+    console.log(is_done)
+    try {
+        await prisma.task_tb.update({
+            where: { id: parseInt(task_id) },
+            data: {
+                is_done: true
+            }
+        })
+        res.redirect(`/collections/${collection_id}`);
+    } catch (error) {
+        console.log(error);
+        res.redirect(`/collections/${collection_id}`);
+    }
+})
 
 
 

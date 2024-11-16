@@ -9,7 +9,7 @@ datasource db {
 
 model collections_tb {
   id      Int       @id @default(autoincrement())
-  name    String    @unique @db.VarChar(255)
+  name    String    @db.VarChar(255)
   user_id Int
   task_tb task_tb[]
 }
